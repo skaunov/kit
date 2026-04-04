@@ -583,8 +583,9 @@ async fn make_app(current_dir: &std::ffi::OsString) -> Result<Command> {
     let wasi_version = Arg::new("WASI_VERSION")
         .action(ArgAction::Set)
         .long("wasi_version")
-        .help("specify Wasmtime version to download (default: `v{DEFAULT_WASI_VERSION}`)")
+        .help("[specify] Wasmtime version to download (default: \"{DEFAULT_WASI_VERSION}\")")
         .default_value(build::DEFAULT_WASI_VERSION.to_string())
+        // `semver::VersionReq` would be more user-friendly, but current download link pattern requires precision
         .value_parser(clap::builder::ValueParser::new(semver::Version::parse))
         .required(false);
     Ok(command!()
