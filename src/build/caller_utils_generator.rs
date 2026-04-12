@@ -53,7 +53,7 @@ fn find_world_names(api_dir: &Path) -> Result<Vec<String>> {
                 if content.contains("world ") {
                     debug!(file = %path.display(), "Analyzing potential world definition file");
 
-                    // Extract the world name
+                    // Extract the world name.
                     let lines: Vec<&str> = content.lines().collect();
 
                     if let Some(world_line) =
@@ -65,7 +65,7 @@ fn find_world_names(api_dir: &Path) -> Result<Vec<String>> {
                             let clean_name = world_name.trim_end_matches(" {");
                             debug!(name = %clean_name, "Extracted potential world name");
 
-                            // Check if this is a types-prefixed world
+                            // Check if this is a types-prefixed world.
                             if clean_name.starts_with("types-") {
                                 world_names.push(clean_name.to_string());
                                 debug!(name = %clean_name, "Found types-prefixed world");
@@ -254,7 +254,7 @@ struct SignatureStruct {
     args_comment: Option<String>, // Parsed from // args: (name: type, ...) comment
 }
 
-// Find all interface imports in the selected world WIT file(s)
+// Find all interface imports in the selected world WIT file(s).
 #[instrument(level = "trace", skip_all)]
 fn find_interfaces_in_world(api_dir: &Path, world_name: &str) -> Result<Vec<String>> {
     debug!(dir = ?api_dir, world = %world_name, "Finding interface imports in world definitions");
@@ -640,7 +640,7 @@ crate-type = ["cdylib", "lib"]
 
     debug!("Created Cargo.toml for {}", crate_name);
 
-    // Get the world name (preferably the types- version)
+    // Get the world name (preferably the types- version).
     let world_names = find_world_names(api_dir)?;
     debug!("Using world names for code generation: {:?}", world_names);
     let world_name = if world_names.len() == 0 {
@@ -658,13 +658,13 @@ crate-type = ["cdylib", "lib"]
         "types"
     };
 
-    // Get all interfaces from the selected world
+    // Get all interfaces from the selected world.
     let interface_imports = find_interfaces_in_world(api_dir, world_name)?;
 
     // Store all types from each interface
     let mut interface_types: HashMap<String, Vec<String>> = HashMap::new();
 
-    // Find all WIT files in the api directory to generate stubs
+    // Find all WIT files in the api directory to generate stubs.
     let mut wit_files = Vec::new();
     for entry in WalkDir::new(api_dir)
         .max_depth(1)
@@ -699,11 +699,11 @@ crate-type = ["cdylib", "lib"]
         "Found WIT interface files for stub generation"
     );
 
-    // Generate content for each module and collect types
+    // Generate content for each module and collect types.
     let mut module_contents = HashMap::<String, String>::new();
 
     for wit_file in &wit_files {
-        // Extract the interface name from the file name
+        // Extract the interface name from the file name.
         let interface_name = wit_file.file_stem().unwrap().to_string_lossy();
         let snake_interface_name = to_snake_case(&interface_name);
 

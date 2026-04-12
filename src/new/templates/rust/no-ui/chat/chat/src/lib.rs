@@ -22,58 +22,55 @@ fn handle_message(
     message: &Message,
     message_archive: &mut MessageArchive,
 ) -> anyhow::Result<()> {
-    if !message.is_request() {
-        return Err(anyhow::anyhow!("unexpected Response: {:?}", message));
-    }
+    if message.is_request() {
+        let body = message.body();
+        let source = message.source();
+        match body.try_into()? {
+            ChatRequest::Send(SendRequest {
+                ref target,
+                ref message,
+            }) => {
+                // Counterparty is the other node in the chat with us.
+                let (counterparty, author) = if target == &our.node {
+                    (&source.node, source.node.clone())
+                } else {
+                    (target, our.node.clone())
+                };
 
-    let body = message.body();
-    let source = message.source();
-    match body.try_into()? {
-        ChatRequest::Send(SendRequest {
-            ref target,
-            ref message,
-        }) => {
-            // Counterparty is the other node in the chat with us
-            let (counterparty, author) = if target == &our.node {
-                (&source.node, source.node.clone())
-            } else {
-                (target, our.node.clone())
-            };
+                // If the target is not us, send a request to the target.
+                if target == &our.node {
+                    println!("{}: {}", source.node, message);
+                } else {
+                    Request::new()
+                        .target((target, "chat", "chat", "template.os"))
+                        .body(body)
+                        .send_and_await_response(5)??;
+                }
 
-            // If the target is not us, send a request to the target
-            if target == &our.node {
-                println!("{}: {}", source.node, message);
-            } else {
-                Request::new()
-                    .target((target, "chat", "chat", "template.os"))
-                    .body(body)
-                    .send_and_await_response(5)??;
+                // Insert message into archive, creating one for counterparty if it DNE.
+                let new_message = ChatMessage {
+                    author: author.clone(),
+                    content: message.clone(),
+                };
+                message_archive
+                    .entry(counterparty.to_string())
+                    .and_modify(|e| e.push(new_message.clone()))
+                    .or_insert(vec![new_message]);
+
+                Response::new().body(ChatResponse::Send).send().unwrap()
             }
-
-            // Insert message into archive, creating one for counterparty if it DNE
-            let new_message = ChatMessage {
-                author: author.clone(),
-                content: message.clone(),
-            };
-            message_archive
-                .entry(counterparty.to_string())
-                .and_modify(|e| e.push(new_message.clone()))
-                .or_insert(vec![new_message]);
-
-            Response::new().body(ChatResponse::Send).send().unwrap();
-        }
-        ChatRequest::History(ref node) => {
-            Response::new()
+            ChatRequest::History(ref node) => Response::new()
                 .body(ChatResponse::History(
                     message_archive
                         .get(node)
                         .map(|msgs| msgs.clone())
                         .unwrap_or_default(),
                 ))
-                .send()?;
+                .send(),
         }
+    } else {
+        Err(anyhow::anyhow!("unexpected Response: {:?}", message))
     }
-    Ok(())
 }
 
 call_init!(init);

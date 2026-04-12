@@ -965,7 +965,7 @@ async fn compile_rust_wasm_process(
     let process_name = get_process_name(&process_dir.join("Cargo.toml"))?;
     info!("Compiling Rust Hyperware process in {:?}...", process_dir);
 
-    // Paths
+    // Paths.
     let wit_dir = package_dir.join("target").join("wit");
     let bindings_dir = package_dir
         .join("target")
@@ -973,7 +973,7 @@ async fn compile_rust_wasm_process(
         .join(package_dir.file_name().unwrap());
     fs::create_dir_all(&bindings_dir)?;
 
-    // Check and download wasi_snapshot_preview1.wasm if it does not exist
+    // Check and download wasi_snapshot_preview1.wasm if it does not exist.
     let wasi_snapshot_file = package_dir
         .join("target")
         .join("wasi_snapshot_preview1.wasm");
@@ -983,7 +983,7 @@ async fn compile_rust_wasm_process(
     );
     download_file(&wasi_snapshot_url, &wasi_snapshot_file).await?;
 
-    // Copy wit directory to bindings
+    // Copy wit directory to bindings.
     fs::create_dir_all(&bindings_dir.join("wit"))?;
     for entry in fs::read_dir(&wit_dir)? {
         let entry = entry?;
@@ -993,9 +993,10 @@ async fn compile_rust_wasm_process(
         )?;
     }
 
-    // Build the module using Cargo
+    // Build the module using Cargo.
     let mut args = vec![
         toolchain,
+        // "-Z minimal-versions",
         "build",
         "-p",
         &process_name,
@@ -1038,19 +1039,25 @@ async fn compile_rust_wasm_process(
         if stderr.contains("warning") {
             warn!("{}", stderr);
         }
+    } else {
+        tracing::trace![
+            "Cargo successfully ran over {:?} without an output",
+            process_dir.file_name()
+        ]
     }
 
-    // Adapt the module using wasm-tools
+    // Adapt the module using Wasm-tools.
 
-    // For use inside of process_dir
-    // Run `wasm-tools component new`, putting output in pkg/
-    //  and rewriting all `_`s to `-`s
-    // cargo hates `-`s and so outputs with `_`s; Hypermap hates
-    //  `_`s and so we convert to and enforce all `-`s
+    // For use inside of process_dir.
+    // Run `wasm-tools component new`, putting output in <pkg/>
+    // and rewriting all "_" to "-".
+    // Cargo hates "-" and so outputs with "_"; Hypermap hates
+    // `_` and so we convert to and enforce all `-`.
     let wasm_file_name_cab = process_dir
         .file_name()
-        .and_then(|s| s.to_str())
-        .unwrap()
+        .expect("process_dir must have a file name")
+        .to_str()
+        .expect("TODO")
         .replace("-", "_");
     let wasm_file_name_hep = wasm_file_name_cab.replace("_", "-");
 
