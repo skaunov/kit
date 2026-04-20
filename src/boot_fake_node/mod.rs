@@ -349,31 +349,23 @@ pub async fn find_releases_with_asset_if_online(asset_name: String) -> Result<Ve
 fn get_local_versions_with_prefix(prefix: &str) -> Result<Vec<String>> {
     let mut versions = Vec::new();
 
-    let path = Path::new(KIT_CACHE);
-    for entry in fs::read_dir(&path)? {
-        let entry = entry?;
-        let path = entry.path();
-        if let Some(str_path) = path.to_str() {
+    for entry in fs::read_dir(&Path::new(KIT_CACHE))? {
+        if let Some(str_path) = entry?.path().to_str() {
             if str_path.starts_with(prefix) {
-                let version = str_path.replace(prefix, "");
-                versions.push(version);
+                versions.push(str_path.replace(prefix, ""));
             }
         }
     }
 
-    let mut sorted_versions: Vec<Version> = versions
-        .into_iter()
-        .filter_map(|s| Version::parse(&s).ok())
-        .collect();
+    let mut sorted_versions: Vec<Version> = versions.into_iter()
+    .filter_map(|s| Version::parse(&s).ok())
+    .collect();
     sorted_versions.sort();
-
-    let versions = sorted_versions
-        .into_iter()
-        .rev()
-        .map(|v| v.to_string())
-        .collect();
-
-    Ok(versions)
+    Ok(sorted_versions
+    .into_iter()
+    .rev()
+    .map(|v| v.to_string())
+    .collect())
 }
 
 #[instrument(level = "trace", skip_all)]
