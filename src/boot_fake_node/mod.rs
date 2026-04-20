@@ -153,14 +153,11 @@ pub fn get_platform_runtime_name(is_simulation_mode: bool) -> Result<String> {
         ("Linux", "aarch64") => "aarch64-unknown-linux-gnu",
         ("Darwin", "arm64") => "arm64-apple-darwin",
         ("Darwin", "x86_64") => "x86_64-apple-darwin",
-        _ => {
-            return Err(eyre!(
-                            "OS/Architecture {}/{} not amongst pre-built [Linux/x86_64, Linux/aarch64, Apple/arm64, Apple/x86_64].",
-                            os_name,
-                            architecture_name,
-                        ).with_suggestion(|| "Use the `--runtime-path` flag to build a local copy of the https://github.com/hyperware-ai/hyperdrive repo")
-                        );
-        }
+        _ => return Err(eyre!(
+            "OS/Architecture {}/{} not amongst pre-built [Linux/x86_64, Linux/aarch64, Apple/arm64, Apple/x86_64].",
+            os_name,
+            architecture_name,
+        ).with_suggestion(|| "Use the `--runtime-path` flag to build a local copy of the <https://github.com/hyperware-ai/hyperdrive> repo"))
     };
     Ok(format!(
         "hyperdrive-{}{}.zip",
