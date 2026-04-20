@@ -184,8 +184,7 @@ async fn get_runtime_binary(version: &str, is_simulation_mode: bool) -> Result<P
             Some(HYPERWARE_OWNER),
             Some(HYPERDRIVE_REPO),
             &get_platform_runtime_name(is_simulation_mode)?,
-        )
-        .await?
+        ).await?
         .first()
         .ok_or(eyre!("No releases found"))?
         .clone()
@@ -307,10 +306,10 @@ pub async fn get_from_github(owner: &str, repo: &str, endpoint: &str) -> Result<
 #[instrument(level = "trace", skip_all)]
 pub async fn fetch_releases(owner: &str, repo: &str) -> Result<Vec<Release>> {
     let bytes = get_from_github(owner, repo, "releases").await?;
-    if bytes.is_empty() {
-        return Ok(vec![]);
-    }
-    Ok(serde_json::from_slice(&bytes)?)
+    Ok(
+        if bytes.is_empty() {vec![]}
+        else {serde_json::from_slice(&bytes)?}
+    )
 }
 
 #[instrument(level = "trace", skip_all)]
@@ -329,8 +328,8 @@ pub async fn find_releases_with_asset(
             .collect()
     });
     if filtered_releases.is_err() {
-        warn!("Failed to fetch releases from {owner}/{repo}.");
-    }
+        warn!("Failed to fetch releases from {owner}/{repo}.")
+    } else {tracing::trace!("Found releases. {filtered_releases:?}")}
     filtered_releases
 }
 
@@ -340,18 +339,13 @@ pub async fn find_releases_with_asset_if_online(
     asset_name: &str,
 ) -> Result<Vec<String>> {
     let remote_values = find_releases_with_asset(owner, repo, asset_name).await;
-    if let Err(e) = &remote_values {
-        if let Some(ee) = e.downcast_ref::<reqwest::Error>() {
-            if ee.is_connect() {
-                return get_local_versions_with_prefix(&format!("{}v", LOCAL_PREFIX))
-                .map(
-                    |versions| versions.iter()
-                    .map(|v| format!("v{}", v)).collect()
-                )
-            }
-        } 
-    } 
-    remote_values
+    if remote_values.iter().flatten().next().is_none() {
+        tracing::debug!["nothing useful from remote fetching"];
+        let r = get_local_versions_with_prefix(&format!("{}v", LOCAL_PREFIX));
+        tracing::trace!("Using local versions. {r:?}");
+        return r.map(|versions| versions.iter()
+        .map(|v| format!("v{}", v)).collect())
+    } else {remote_values}
 }
 
 #[instrument(level = "trace", skip_all)]
