@@ -139,38 +139,38 @@ pub fn get_platform_runtime_name(is_simulation_mode: bool) -> Result<String> {
     if !uname.status.success() {
         return Err(eyre!("Could not determine OS."));
     }
-        let os_name = std::str::from_utf8(&uname.stdout)?.trim();
+    let os_name = std::str::from_utf8(&uname.stdout)?.trim();
 
-        let uname_m = Command::new("uname").arg("-m").output()?;
+    let uname_m = Command::new("uname").arg("-m").output()?;
     if !uname_m.status.success() {
         return Err(eyre!("Could not determine architecture."));
     }
-            let architecture_name = std::str::from_utf8(&uname_m.stdout)?.trim();
+    let architecture_name = std::str::from_utf8(&uname_m.stdout)?.trim();
 
-                // TODO: update when have binaries
+    // TODO: update when have binaries
     let zip_name_midfix = match (os_name, architecture_name) {
-                    ("Linux", "x86_64") => "x86_64-unknown-linux-gnu",
-                    ("Linux", "aarch64") => "aarch64-unknown-linux-gnu",
-                    ("Darwin", "arm64") => "arm64-apple-darwin",
-                    ("Darwin", "x86_64") => "x86_64-apple-darwin",
-                    _ => {
-                        return Err(eyre!(
+        ("Linux", "x86_64") => "x86_64-unknown-linux-gnu",
+        ("Linux", "aarch64") => "aarch64-unknown-linux-gnu",
+        ("Darwin", "arm64") => "arm64-apple-darwin",
+        ("Darwin", "x86_64") => "x86_64-apple-darwin",
+        _ => {
+            return Err(eyre!(
                             "OS/Architecture {}/{} not amongst pre-built [Linux/x86_64, Linux/aarch64, Apple/arm64, Apple/x86_64].",
                             os_name,
                             architecture_name,
                         ).with_suggestion(|| "Use the `--runtime-path` flag to build a local copy of the https://github.com/hyperware-ai/hyperdrive repo")
                         );
-                    }
+        }
     };
     Ok(format!(
         "hyperdrive-{}{}.zip",
         zip_name_midfix,
-                if is_simulation_mode {
-                    "-simulation-mode"
-                } else {
-                    ""
-                },
-            ))
+        if is_simulation_mode {
+            "-simulation-mode"
+        } else {
+            ""
+        },
+    ))
 }
 
 #[instrument(level = "trace", skip_all)]
@@ -330,9 +330,7 @@ pub async fn find_releases_with_asset(
 }
 
 pub async fn find_releases_with_asset_if_online(asset_name: String) -> Result<Vec<String>> {
-    let values_remote = tokio::spawn(find_releases_with_asset(
-        None, None, asset_name
-    ));
+    let values_remote = tokio::spawn(find_releases_with_asset(None, None, asset_name));
     let values_local = get_local_versions_with_prefix(&format!("{}v", LOCAL_PREFIX));
     tracing::trace!("Got local versions result. {values_local:?}");
     let values_local = values_local.map(
