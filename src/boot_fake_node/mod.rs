@@ -185,10 +185,9 @@ async fn get_runtime_binary(version: &str, is_simulation_mode: bool) -> Result<P
             Some(HYPERDRIVE_REPO),
             &get_platform_runtime_name(is_simulation_mode)?,
         )
-        .await
-        .unwrap_or_default()
+        .await?
         .first()
-        .ok_or_else(|| eyre!("No releases found"))?
+        .ok_or(eyre!("No releases found"))?
         .clone()
     };
 
