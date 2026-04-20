@@ -322,17 +322,17 @@ pub async fn find_releases_with_asset(
 ) -> Result<Vec<String>> {
     let owner = owner.unwrap_or(HYPERWARE_OWNER);
     let repo = repo.unwrap_or(HYPERDRIVE_REPO);
-    let r = fetch_releases(owner, repo).await.map(|releases| {
+    let filtered_releases = fetch_releases(owner, repo).await.map(|releases| {
         releases
             .into_iter()
             .filter(|release| release.assets.iter().any(|asset| asset.name == asset_name))
             .map(|release| release.tag_name)
             .collect()
     });
-    if r.is_err() {
+    if filtered_releases.is_err() {
         warn!("Failed to fetch releases from {owner}/{repo}.");
     }
-    r
+    filtered_releases
 }
 
 pub async fn find_releases_with_asset_if_online(
@@ -340,8 +340,8 @@ pub async fn find_releases_with_asset_if_online(
     repo: Option<&str>,
     asset_name: &str,
 ) -> Result<Vec<String>> {
-    let r = find_releases_with_asset(owner, repo, asset_name).await;
-    if let Err(e) = &r {
+    let remote_values = find_releases_with_asset(owner, repo, asset_name).await;
+    if let Err(e) = &remote_values {
         if let Some(ee) = e.downcast_ref::<reqwest::Error>() {
             if ee.is_connect() {
                 return Ok(
@@ -353,7 +353,7 @@ pub async fn find_releases_with_asset_if_online(
             }
         } 
     } 
-    r
+    remote_values
 }
 
 #[instrument(level = "trace", skip_all)]
