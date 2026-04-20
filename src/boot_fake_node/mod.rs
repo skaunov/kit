@@ -344,11 +344,10 @@ pub async fn find_releases_with_asset_if_online(
     if let Err(e) = &remote_values {
         if let Some(ee) = e.downcast_ref::<reqwest::Error>() {
             if ee.is_connect() {
-                return Ok(
-                    get_local_versions_with_prefix(&format!("{}v", LOCAL_PREFIX))?
-                        .iter()
-                        .map(|v| format!("v{}", v))
-                        .collect(),
+                return get_local_versions_with_prefix(&format!("{}v", LOCAL_PREFIX))
+                .map(
+                    |versions| versions.iter()
+                    .map(|v| format!("v{}", v)).collect()
                 )
             }
         } 
