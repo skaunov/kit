@@ -322,16 +322,17 @@ pub async fn find_releases_with_asset(
 ) -> Result<Vec<String>> {
     let owner = owner.unwrap_or(HYPERWARE_OWNER);
     let repo = repo.unwrap_or(HYPERDRIVE_REPO);
-    let Ok(releases) = fetch_releases(owner, repo).await else {
-        warn!("Failed to fetch releases from {owner}/{repo}. Using empty");
-        return Ok(vec![]);
-    };
-    let filtered_releases: Vec<String> = releases
-        .into_iter()
-        .filter(|release| release.assets.iter().any(|asset| asset.name == asset_name))
-        .map(|release| release.tag_name)
-        .collect();
-    Ok(filtered_releases)
+    let r = fetch_releases(owner, repo).await.map(|releases| {
+        releases
+            .into_iter()
+            .filter(|release| release.assets.iter().any(|asset| asset.name == asset_name))
+            .map(|release| release.tag_name)
+            .collect()
+    });
+    if r.is_err() {
+        warn!("Failed to fetch releases from {owner}/{repo}.");
+    }
+    r
 }
 
 pub async fn find_releases_with_asset_if_online(
@@ -339,23 +340,25 @@ pub async fn find_releases_with_asset_if_online(
     repo: Option<&str>,
     asset_name: &str,
 ) -> Result<Vec<String>> {
-    let remote_values = match find_releases_with_asset(owner, repo, asset_name).await {
-        Ok(v) => v,
-        Err(e) => match e.downcast_ref::<reqwest::Error>() {
-            None => return Err(e),
-            Some(ee) => {
-                if ee.is_connect() {
+    let r = find_releases_with_asset(owner, repo, asset_name).await;
+    if let Err(e) = &r {
+        if let Some(ee) = e.downcast_ref::<reqwest::Error>() {
+            if ee.is_connect() {
+                Ok(
                     get_local_versions_with_prefix(&format!("{}v", LOCAL_PREFIX))?
                         .iter()
                         .map(|v| format!("v{}", v))
-                        .collect()
-                } else {
-                    return Err(e);
-                }
+                        .collect(),
+                )
+            } else {
+                r
             }
-        },
-    };
-    Ok(remote_values)
+        } else {
+            r
+        }
+    } else {
+        r
+    }
 }
 
 #[instrument(level = "trace", skip_all)]
