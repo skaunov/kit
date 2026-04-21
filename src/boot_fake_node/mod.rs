@@ -216,26 +216,25 @@ pub async fn get_or_build_runtime_binary(
     runtime_path: Option<PathBuf>,
     is_release: bool,
 ) -> Result<PathBuf> {
-    let runtime_path = match runtime_path {
-        None => get_runtime_binary(&version, is_simulation_mode).await?,
+    match runtime_path {
+        None => get_runtime_binary(&version, is_simulation_mode).await,
         Some(runtime_path) => {
-            if !runtime_path.exists() {
-                return Err(eyre!("--runtime-path {:?} does not exist.", runtime_path));
-            }
-            let runtime_path = if runtime_path.is_dir() {
-                // Compile the runtime binary
-                compile_runtime(&runtime_path, is_release, is_simulation_mode)?;
-                runtime_path
-                    .join("target")
-                    .join(if is_release { "release" } else { "debug" })
-                    .join("hyperdrive")
+            if runtime_path.exists() {
+                if runtime_path.is_dir() {
+                    // compile the runtime binary
+                    compile_runtime(&runtime_path, is_release, is_simulation_mode)?;
+                    Ok(runtime_path
+                        .join("target")
+                        .join(if is_release { "release" } else { "debug" })
+                        .join("hyperdrive"))
+                } else {
+                    Ok(runtime_path)
+                }
             } else {
-                runtime_path
-            };
-            runtime_path
+                Err(eyre!("` --runtime-path` {:?} does not exist.", runtime_path))
+            }
         }
-    };
-    Ok(runtime_path)
+    }
 }
 
 #[instrument(level = "trace", skip_all)]
