@@ -1253,13 +1253,11 @@ async fn fetch_dependencies(
         verbose,
         true,
         toolchain,
-    ))
-    .await
-    {
-        debug!("Failed to build self as dependency: {e:?}");
+    )).await {
+        debug!("While building self as dependency got the following error. {e:?}")
     } else if let Err(e) = fetch_local_built_dependency(apis, wasm_paths, package_dir) {
-        debug!("Failed to fetch self as dependency: {e:?}");
-    };
+        debug!("Failed to fetch self as dependency: {e:?}")
+    }
     let canon_package_dir = package_dir.canonicalize()?;
     for local_dependency in &local_dependencies
         .iter()
@@ -1314,11 +1312,10 @@ async fn fetch_dependencies(
         if local_dependencies.contains(dep.package()) {
             continue;
         }
-        let Some(zip_dir) =
-            view_api::execute(None, Some(dependency), url, download_from, false).await?
+        let Some(zip_dir) = view_api::execute(None, Some(dependency), url, download_from, false).await?
         else {
             return Err(eyre!(
-                "Got unexpected result from fetching API for {dependency}"
+                "Got unexpected (`None`) result from fetching API for {dependency}"
             ));
         };
         for entry in fs::read_dir(zip_dir)? {

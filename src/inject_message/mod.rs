@@ -97,11 +97,10 @@ pub async fn send_request_inner(url: &str, json_data: Value) -> Result<reqwest::
 pub async fn parse_response(response: reqwest::Response) -> Result<Response> {
     if response.status() != 200 {
         let response_status = response.status();
-        let response_text = response.text().await.unwrap_or_default();
 
         debug!(
-            "Failed with status code: {}\nResponse: {}",
-            response_status, response_text,
+            "Failed with the following status code. {response_status}\nAnd the following Response text. {:?}",
+            response.text().await
         );
         return Err(eyre!("Failed with status code: {}", response_status));
     } else {
